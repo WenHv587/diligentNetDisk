@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="edu.cqupt.netdisk.dao.CategoryMapper">
+
+    <resultMap id="categoryResultMap" type="edu.cqupt.netdisk.domain.Category">
+        <id property="cid" jdbcType="INTEGER" column="cid"/>
+        <result property="cname" jdbcType="VARCHAR" column="cname"/>
+    </resultMap>
+
+    <!--查询所有文件类别-->
+    <select id="getAllCategory" resultMap="categoryResultMap">
+        SELECT * FROM category
+    </select>
+
+    <!--根据类别id查找类别-->
+    <select id="getCategoryById" resultMap="categoryResultMap">
+        SELECT * FROM category
+        WHERE cid = #{cid}
+    </select>
+</mapper>

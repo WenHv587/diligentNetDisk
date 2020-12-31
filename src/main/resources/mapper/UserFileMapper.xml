@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="edu.cqupt.netdisk.dao.UserFileMapper">
+    <resultMap id="fileResultMap" type="edu.cqupt.netdisk.domain.UserFile">
+        <id property="fid" jdbcType="INTEGER" column="fid"/>
+        <result property="fname" jdbcType="VARCHAR" column="fname"/>
+        <result property="fsize" jdbcType="VARCHAR" column="fsize"/>
+        <result property="fuploadtime" jdbcType="VARCHAR" column="fuploadtime"/>
+        <result property="fstatus" jdbcType="VARCHAR" column="fstatus"/>
+        <association property="category" javaType="edu.cqupt.netdisk.domain.Category">
+            <id property="cid" column="cid"/>
+            <result property="cname" column="cname"/>
+        </association>
+        <association property="user" javaType="edu.cqupt.netdisk.domain.User">
+            <id property="userId" column="userId"/>
+            <result property="username" column="username"/>
+            <result property="password" column="password"/>
+            <result property="email" column="email"/>
+            <result property="status" column="status"/>
+        </association>
+    </resultMap>
+
+    <!--增加文件-->
+    <insert id="addFile" parameterType="edu.cqupt.netdisk.domain.UserFile" useGeneratedKeys="true">
+        INSERT INTO file(fname, fsize, fuploadtime, fstatus, f_cid, f_uid)
+        VALUES (#{fname}, #{fsize}, #{fuploadtime}, #{fstatus}, #{category.cid}, #{user.userId})
+    </insert>
+
+    <!--根据用户id查询用户的所有文件-->
+    <select id="getFileByUser" parameterType="Integer" resultMap="fileResultMap">
+        SELECT * FROM file
+        WHERE f_uid = #{userId} AND fstatus NOT LIKE "d_%"
+        ORDER BY fuploadtime DESC
+    </select>
+
+    <!--根据文件名查找用户文件-->
+    <select id="getFileByFilename" resultMap="fileResultMap">
+        SELECT * FROM file
+        WHERE f_uid = #{userId, jdbcType=INTEGER} AND fname = #{filename, jdbcType=VARCHAR} AND fstatus NOT LIKE "d_%"
+    </select>
+
+    <!--根据文件id获取文件-->
+    <select id="getFileById" parameterType="INTEGER" resultMap="fileResultMap">
+        SELECT * FROM file WHERE fid = #{fid}
+    </select>
+
+    <!--查询指定用户某个类别的文件-->
+    <select id="getFileByCategory" resultMap="fileResultMap">
+        SELECT * FROM file
+        WHERE f_uid = #{userId, jdbcType=INTEGER} AND f_cid = #{cid, jdbcType=INTEGER} AND fstatus NOT LIKE "d_%"
+        ORDER BY fuploadtime DESC
+    </select>
+
+    <!--查询共享文件（同时查出上传者）-->
+    <select id="getPublicFile" resultMap="fileResultMap">
+        SELECT f.*, u.username
+        FROM file f LEFT JOIN user u ON f.f_uid = u.userId
+        WHERE fstatus LIKE "s_%"
+        ORDER BY SUBSTR(fstatus, 3) DESC
+    </select>
+
+    <!--查询用户回收站中的文件-->
+    <select id="getTrash" parameterType="Integer" resultMap="fileResultMap">
+        SELECT * FROM file
+        WHERE f_uid = #{userId} AND fstatus LIKE "d_%"
+        ORDER BY SUBSTR(fstatus, 3) DESC
+    </select>
+
+
+<!--    ===========================-->
+    <!--共享文件-->
+    <update id="shareFile">
+        UPDATE file SET fstatus = #{fstatus, jdbcType=VARCHAR}
+        WHERE fid = #{fid, jdbcType=INTEGER}
+    </update>
+
+    <!--取消分享文件-->
+    <update id="cancelShare" parameterType="INTEGER">
+        UPDATE file SET fstatus = 0 WHERE fid = #{fid}
+    </update>
+
+    <!--将文件放入回收站-->
+    <update id="trashFile">
+        UPDATE file SET fstatus = #{fstatus, jdbcType=VARCHAR}
+        WHERE fid = #{fid, jdbcType=INTEGER}
+    </update>
+
+    <!--将回收站中的文件恢复-->
+    <update id="restoreFile" parameterType="INTEGER">
+        UPDATE file SET fstatus = 0 WHERE fid = #{fid}
+    </update>
+<!--    ===========================-->
+
+    <!--删除文件-->
+    <delete id="deleteFile" parameterType="INTEGER">
+        DELETE FROM file WHERE fid = #{fid}
+    </delete>
+
+    <!--修改文件名称-->
+    <update id="modifyFileName">
+        UPDATE file SET fname = #{newName, jdbcType=VARCHAR} WHERE fid = #{fid, jdbcType=INTEGER}
+    </update>
+
+
+
+</mapper>
