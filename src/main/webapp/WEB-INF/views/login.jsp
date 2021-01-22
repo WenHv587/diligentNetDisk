@@ -83,7 +83,7 @@
                     if (result.code === 200) {
                         show_validate_msg("#InputUsername", "success", "");
                         show_validate_msg("#InputPassword", "success", "");
-                        window.location.href = "${APP_PATH}/utils/jump/main2"
+                        window.location.href = "${APP_PATH}/utils/jump/main"
                     } else {
                         if (typeof(result.extend.errorMap) != "undefined") {
                             if (typeof(result.extend.errorMap.username) != "undefined") {

@@ -30,8 +30,8 @@
 
     <!--根据用户id查询用户的所有文件-->
     <select id="getFileByUser" parameterType="Integer" resultMap="fileResultMap">
-        SELECT * FROM file
-        WHERE f_uid = #{userId} AND fstatus NOT LIKE "d_%"
+        SELECT * FROM file, category
+        WHERE file.f_cid = category.cid AND f_uid = #{userId} AND fstatus NOT LIKE "d_%"
         ORDER BY fuploadtime DESC
     </select>
 
@@ -48,15 +48,15 @@
 
     <!--查询指定用户某个类别的文件-->
     <select id="getFileByCategory" resultMap="fileResultMap">
-        SELECT * FROM file
-        WHERE f_uid = #{userId, jdbcType=INTEGER} AND f_cid = #{cid, jdbcType=INTEGER} AND fstatus NOT LIKE "d_%"
+        SELECT * FROM file, category
+        WHERE file.f_cid = category.cid AND f_uid = #{userId} AND f_uid = #{userId, jdbcType=INTEGER} AND f_cid = #{cid, jdbcType=INTEGER} AND fstatus NOT LIKE "d_%"
         ORDER BY fuploadtime DESC
     </select>
 
     <!--查询共享文件（同时查出上传者）-->
     <select id="getPublicFile" resultMap="fileResultMap">
-        SELECT f.*, u.username
-        FROM file f LEFT JOIN user u ON f.f_uid = u.userId
+        SELECT f.*, u.username, c.cid
+        FROM file f LEFT JOIN user u ON f.f_uid = u.userId LEFT JOIN category c ON f.f_cid = c.cid
         WHERE fstatus LIKE "s_%"
         ORDER BY SUBSTR(fstatus, 3) DESC
     </select>

@@ -7,6 +7,9 @@ import edu.cqupt.netdisk.domain.UserFile;
 import edu.cqupt.netdisk.service.CategoryService;
 import edu.cqupt.netdisk.service.UserFileService;
 import edu.cqupt.netdisk.utils.FilenameUtils;
+import edu.cqupt.netdisk.utils.PreviewUtils;
+import org.apache.commons.io.FileUtils;
+import org.jodconverter.office.OfficeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,11 +21,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
@@ -47,6 +53,104 @@ public class UserFileController {
 
     @Autowired
     private FilenameUtils filenameUtils;
+
+    @Autowired
+    private PreviewUtils previewUtils;
+
+    /**
+     * 预览文本文件
+     * @param username 用户名
+     * @param filename 文件名
+     * @return
+     */
+    @RequestMapping(value = "/previewOffice")
+    @ResponseBody
+    public Msg previewOffice(@RequestParam(value = "username") String username
+            , @RequestParam(value = "filename") String filename) throws IOException {
+        // 要预览的文件的真实路径
+        String truePath = "D:\\DeskTop\\netDisk\\" + username + "\\" + filename;
+        // 存放所有被预览文件的位置
+        String previewPath = "D:\\JavaSE\\diligentProject3\\src\\main\\webapp\\preview\\";
+        System.out.println("文件真实路径=" + truePath);
+
+        // 获取文件的后缀名
+        int index = filename.lastIndexOf('.');
+        String suffix = filename.substring(index);
+        System.out.println("文件后缀名=" + suffix);
+        // 获取不包含文件后缀的真实文件名称
+        String pre = filename.substring(0, index);
+        System.out.println("文件真实名称=" + pre);
+
+        File pdfFile;
+        String pdfName;
+        if (suffix.equalsIgnoreCase(".pdf")) {
+            pdfFile = new File(previewPath + filename);
+            if (pdfFile.exists()) {
+                return Msg.success().add("urlName", filename);
+            } else {
+                System.out.println("进行转换格式");
+                // 将pdf文件复制到可以访问到的文件夹下
+                FileUtils.copyFile(new File(truePath), pdfFile);
+                // 返回文件名称，供前台打开
+                return Msg.success().add("urlName", filename);
+            }
+        } else if (suffix.equalsIgnoreCase(".txt")) {
+            pdfName = pre + ".pdf";
+            pdfFile = new File(previewPath + pdfName);
+            if (pdfFile.exists()) {
+                // 如果可预览的文件已经存在，则直接返回
+                return Msg.success().add("urlName", pdfName);
+            } else {
+                System.out.println("进行转换格式");
+                // 如果要预览的文件是txt，需要先转成odt，再转成pdf
+                String odtPath = "D:\\DeskTop\\pdfForPreview\\" + pre + ".odt";
+                File odtFile = new File(odtPath);
+                FileUtils.copyFile(new File(truePath), odtFile);
+                try {
+                    previewUtils.doc2pdf(odtFile, pdfFile);
+                } catch (OfficeException e) {
+                    e.printStackTrace();
+                }
+                return Msg.success().add("urlName", pdfName);
+            }
+        } else {
+            // 如果是其他office文件，一律直接转成pdf
+            pdfName = pre + ".pdf";
+            pdfFile = new File(previewPath + pdfName);
+            if (pdfFile.exists()) {
+                return Msg.success().add("urlName",pdfName);
+            } else {
+                System.out.println("进行转换格式");
+                try {
+                    previewUtils.doc2pdf(new File(truePath),pdfFile);
+                } catch (OfficeException e) {
+                    e.printStackTrace();
+                }
+                return Msg.success().add("urlName",pdfName);
+            }
+        }
+    }
+
+    /**
+     * 预览图片文件
+     * @param username 用户名
+     * @param filename 文件名
+     * @param response
+     */
+    @RequestMapping(value = "/previewImg")
+    @ResponseBody
+    public void previewImg(@RequestParam(value = "username") String username
+            , @RequestParam(value = "filename") String filename, HttpServletResponse response) {
+        String imgPath = "D:\\DeskTop\\netdisk\\" + username + "\\" + filename;
+        File file = new File(imgPath);
+
+        try {
+            BufferedImage image = ImageIO.read(new FileInputStream(file));
+            ImageIO.write(image,"jpg",response.getOutputStream());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * 计算用户网盘中文件的总大小
@@ -76,6 +180,7 @@ public class UserFileController {
             , @RequestParam(value = "newName") String newName
             , @RequestParam(value = "fid") Integer fid
             , @RequestParam(value = "username") String username) {
+        System.out.println(newName);
         // 根据用户id和文件名称去数据库查重
         UserFile file = userFileService.getFileByFilename(userId, newName);
         if (file != null) {

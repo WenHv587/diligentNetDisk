@@ -267,7 +267,6 @@
     function build_file_table(result) {
         $("#div_basicBtn").empty()
             .append("<button type='button' class='btn btn-default' id='btn_upload'>上传</button>")
-            // .append("<button type='button' class='btn btn-default' id='btn_download_multiple'>下载</button>")
             .append("<button type='button' class='btn btn-default' id='btn_delete_multiple'>删除</button>")
             .append("<button type='button' class='btn btn-default' id='btn_share_multiple'>共享</button>");
         // 清空table表格头
@@ -285,7 +284,22 @@
         var fileList = result.extend.fileList;
         $.each(fileList, function (index, item) {
             var checkBoxTd = $("<td><input type='checkbox' class='check_item'></td>");
-            var fileNameTd = $("<td></td>").append(item.fname);
+
+            var fileNameTd;
+            var a;
+            // 如果文件是图片或是文本文件类型，以超链接显示文件的名称，便于预览
+            var username = ${sessionScope.session_user.username};
+            if (item.category.cid === 1) {
+                var path = "${APP_PATH}/file/previewImg?username=" + username + "&filename=" + item.fname;
+                a = $("<a id='previewImg' target='_blank'></a>").text(item.fname).attr("href", path);
+                fileNameTd = $("<td></td>").append(a);
+            } else if (item.category.cid === 4) {
+                a = $("<a id='previewOffice' href='javascript:void(0)'></a>").text(item.fname);
+                fileNameTd = $("<td></td>").append(a);
+            } else {
+                fileNameTd = $("<td></td>").append(item.fname);
+            }
+
             var fileSizeTd = $("<td></td>").append(item.fsize);
             var uploadTimeTd = $("<td></td>").append(item.fuploadtime);
             var fstatusTd = $("<td></td>").append(item.fstatus === "0" ? "私密" : "共享");
@@ -543,7 +557,22 @@
         var fileList = result.extend.fileList;
         $.each(fileList, function (index, item) {
             var checkBoxTd = $("<td><input type='checkbox' class='check_item'></td>");
-            var fileNameTd = $("<td></td>").append(item.fname);
+
+            var fileNameTd;
+            var a;
+            // 如果文件是图片或是文本文件类型，以超链接显示文件的名称，便于预览
+            var username = ${sessionScope.session_user.username};
+            if (item.category.cid === 1) {
+                var path = "${APP_PATH}/file/previewImg?username=" + username + "&filename=" + item.fname;
+                a = $("<a id='previewImg' target='_blank'></a>").text(item.fname).attr("href", path);
+                fileNameTd = $("<td></td>").append(a);
+            } else if (item.category.cid === 4) {
+                a = $("<a id='previewOffice' href='javascript:void(0)'></a>").text(item.fname);
+                fileNameTd = $("<td></td>").append(a);
+            } else {
+                fileNameTd = $("<td></td>").append(item.fname);
+            }
+
             var fileSizeTd = $("<td></td>").append(item.fsize);
             // 处理文件状态的字符串得到文件的共享时间
             var fstatus = item.fstatus;
@@ -847,14 +876,9 @@
     });
 
     /**
-     * 一键恢复
-     */
-
-    /**
      * 开通会员
      */
     $("#openVip").click(function () {
-        alert(${APP_PATH});
         $.ajax({
             url: "${APP_PATH}/user/sendEmail",
             success: function (result) {
@@ -865,6 +889,42 @@
                 }
             }
         });
+    });
+
+    /**
+     * 预览图片
+     */
+    <%--$(document).on("click", "#previewImg", function () {--%>
+        // 获取文件名称
+        <%--var filename = $(this).text();--%>
+        <%--// 获取用户名--%>
+        <%--var username = ${sessionScope.session_user.username};--%>
+    <%--    // 发送ajax请求去后台进行处理--%>
+    <%--    $.ajax({--%>
+    <%--        url: "${APP_PATH}/file/previewImg",--%>
+    <%--        data: "filename=" + filename +  "&username=" + username,--%>
+    <%--    });--%>
+    <%--});--%>
+
+    /**
+     * 预览文本文件
+     */
+    $(document).on("click", "#previewOffice", function () {
+        // 获取文件名称
+        var filename = $(this).text();
+        // 获取用户名
+        var username = ${sessionScope.session_user.username};
+        // 发送ajax请求去后台
+        $.ajax({
+            url: "${APP_PATH}/file/previewOffice",
+            data: "username=" + username + "&filename=" + filename,
+            success: function (result) {
+                if (result.code === 200) {
+                    var path = "${APP_PATH}/pdfjs/web/viewer.html?file=../../preview/" + result.extend.urlName;
+                    window.open(path);
+                }
+            }
+        })
     });
 
 </script>
